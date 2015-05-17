@@ -8,7 +8,7 @@ Instead of recompiling the Linux kernel and setting up Mininet each time we want
 
 ### Hello World Kernel Module
 
-Tutorial [linked here](http://linux.die.net/lkmpg/x121.html).  Note that the Mininet VM includes ***rsyslod*** and that printk() output is logged to ***/var/log/syslog***.
+Tutorial [linked here](http://linux.die.net/lkmpg/x121.html).  Note that the Mininet VM includes **rsyslod** and that printk() output is logged to **/var/log/syslog**.
 
 ### Hello World Congestion Control Kernel Module
 
