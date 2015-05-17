@@ -12,7 +12,9 @@ Tutorial [linked here](http://linux.die.net/lkmpg/x121.html).  Note that the Min
 
 ### Hello World Congestion Control Kernel Module
 
-It's a working congestion control module that writes "Hello, world!" to syslog.  Sub-project in progress...DONE!  I was able to build, load, and sysctl to the westwood+ congestion control algorithm.  See the source here: https://github.com/torvalds/linux/blob/v3.13/net/ipv4/tcp_westwood.c.
+It's a working congestion control module that writes "Hello, world!" to syslog.  Sub-project in progress...DONE!
+
+I was able to build, load, and sysctl to the westwood+ congestion control algorithm.  See the source here: https://github.com/torvalds/linux/blob/v3.13/net/ipv4/tcp_westwood.c.
 
 ## Project Proposal
 Original paper [linked here](http://www.google.com/url?q=http%3A%2F%2Fcseweb.ucsd.edu%2F%257Esavage%2Fpapers%2FCCR99.pdf&sa=D&sntz=1&usg=AFQjCNFIfy1P5RgDYmguNgWUhmgd_3o0Bw).
