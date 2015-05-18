@@ -4,15 +4,11 @@ Original project proposal below.  The top of this README will preference technic
 
 ## Project Implementation Strategy
 
-Instead of recompiling the Linux kernel and setting up Mininet each time we want to debug or run an experiment, it looks like loading and unloading pluggable TCP congestion control kernel modules will do the trick.  Below are notes on what I've achieved on my Mininet VM so far.
+Instead of building a custom kernel and/or loadable kernel modules, we will base our TCP Daytona implementation off of the [LwIP](http://savannah.nongnu.org/projects/lwip/) project, which is a lightweight, user-space TCP/IP stack.
 
-### Hello World Kernel Module
+### Compilation
 
-Tutorial [linked here](http://linux.die.net/lkmpg/x121.html).  Note that the Mininet VM includes **rsyslod** and that printk() output is logged to **/var/log/syslog**.
-
-### Hello World Congestion Control Kernel Module
-
-It's a working congestion control module that writes "Hello, world!" to syslog.  Sub-project in progress...DONE!  I was able to build, load, and sysctl to the westwood+ congestion control algorithm.  See the source here: https://github.com/torvalds/linux/blob/v3.13/net/ipv4/tcp_westwood.c.
+For starters, I've copied the contents of $(CONTRIBDIR)/ports/unix/proj/minimal into the root directory and modified the Makefile accordingly.  Running 'sudo ./echop' starts a TCP echo server on port 7 (you can interact with it by running 'nc [IP address from echop output] 7').  It's (relatively) simple to see how echop is formulated in the Makefile - all LwIP and LwIP sources are compiled to their respective .a libraries and then linked against.  I hope our project code will be able to leverage this boilerplate nicely.
 
 ## Project Proposal
 Original paper [linked here](http://www.google.com/url?q=http%3A%2F%2Fcseweb.ucsd.edu%2F%257Esavage%2Fpapers%2FCCR99.pdf&sa=D&sntz=1&usg=AFQjCNFIfy1P5RgDYmguNgWUhmgd_3o0Bw).
