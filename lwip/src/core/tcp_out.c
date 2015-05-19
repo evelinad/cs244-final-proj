@@ -214,7 +214,7 @@ tcp_create_segment(struct tcp_pcb *pcb, struct pbuf *p, u8_t flags, u32_t seqno,
   /* wnd and chksum are set in tcp_output */
   seg->tcphdr->urgp = 0;
   return seg;
-} 
+}
 
 /**
  * Allocate a PBUF_RAM pbuf, perhaps with extra space at the end.
@@ -229,7 +229,7 @@ tcp_create_segment(struct tcp_pcb *pcb, struct pbuf *p, u8_t flags, u32_t seqno,
  * @param pcb The TCP connection that willo enqueue the pbuf.
  * @param apiflags API flags given to tcp_write.
  * @param first_seg true when this pbuf will be used in the first enqueued segment.
- * @param 
+ * @param
  */
 #if TCP_OVERSIZE
 static struct pbuf *
@@ -397,7 +397,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
 
   LWIP_DEBUGF(TCP_OUTPUT_DEBUG, ("tcp_write(pcb=%p, data=%p, len=%"U16_F", apiflags=%"U16_F")\n",
     (void *)pcb, arg, len, (u16_t)apiflags));
-  LWIP_ERROR("tcp_write: arg == NULL (programmer violates API)", 
+  LWIP_ERROR("tcp_write: arg == NULL (programmer violates API)",
              arg != NULL, return ERR_ARG;);
 
   err = tcp_write_checks(pcb, len);
@@ -888,6 +888,35 @@ tcp_build_wnd_scale_option(u32_t *opts)
 }
 #endif
 
+
+/** CS244 - Send multiple acks for a single data segment
+ *
+ * @param pcb tcp_pcb
+ */
+err_t
+tcp_send_empty_acks(struct tcp_pcb *pcb)
+{
+  err_t err;
+
+  u32_t start = pcb->lastack;
+  u32_t end = pcb->rcv_nxt;
+  u32_t stepsize = end - start / (TCP_ACK_DIV_M - 1);
+  u32_t ackno;
+
+  for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
+    pcb->rcv_nxt = ackno;
+    err = tcp_send_empty_ack(pcb);
+    if (err != ERR_OK) {
+      /* Reset pcb for fast retransmit */
+      pcb->rcv_nxt = end;
+      return err;
+    }
+  }
+
+  pcb->rcv_nxt = end;
+  return tcp_send_empty_ack(pcb);
+}
+
 /** Send an ACK without data.
  *
  * @param pcb Protocol control block for the TCP connection to send the ACK
@@ -918,7 +947,7 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
 #if LWIP_TCP_TIMESTAMPS || CHECKSUM_GEN_TCP
   tcphdr = (struct tcp_hdr *)p->payload;
 #endif /* LWIP_TCP_TIMESTAMPS || CHECKSUM_GEN_TCP */
-  LWIP_DEBUGF(TCP_OUTPUT_DEBUG, 
+  LWIP_DEBUGF(TCP_OUTPUT_DEBUG,
               ("tcp_output: sending ACK for %"U32_F"\n", pcb->rcv_nxt));
 
   /* NB. MSS and window scale options are only sent on SYNs, so ignore them here */
@@ -928,7 +957,7 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
   if (pcb->flags & TF_TIMESTAMP) {
     tcp_build_timestamp_option(pcb, (u32_t *)(tcphdr + 1));
   }
-#endif 
+#endif
 
 #if CHECKSUM_GEN_TCP
   tcphdr->chksum = ip_chksum_pseudo(p, IP_PROTO_TCP, p->tot_len,
@@ -996,7 +1025,13 @@ tcp_output(struct tcp_pcb *pcb)
   if (pcb->flags & TF_ACK_NOW &&
      (seg == NULL ||
       ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)) {
-     return tcp_send_empty_ack(pcb);
+
+    /* CS244 */
+#ifdef TCP_ACK_DIV
+    return tcp_send_empty_acks(pcb);
+#else
+    return tcp_send_empty_ack(pcb);
+#endif
   }
 
   /* useg should point to last segment on unacked queue */
@@ -1018,7 +1053,7 @@ tcp_output(struct tcp_pcb *pcb)
                                  ", seg == NULL, ack %"U32_F"\n",
                                  pcb->snd_wnd, pcb->cwnd, wnd, pcb->lastack));
   } else {
-    LWIP_DEBUGF(TCP_CWND_DEBUG, 
+    LWIP_DEBUGF(TCP_CWND_DEBUG,
                 ("tcp_output: snd_wnd %"TCPWNDSIZE_F", cwnd %"TCPWNDSIZE_F", wnd %"U32_F
                  ", effwnd %"U32_F", seq %"U32_F", ack %"U32_F"\n",
                  pcb->snd_wnd, pcb->cwnd, wnd,
@@ -1029,7 +1064,7 @@ tcp_output(struct tcp_pcb *pcb)
   /* data available and window allows it to be sent? */
   while (seg != NULL &&
          ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
-    LWIP_ASSERT("RST not expected here!", 
+    LWIP_ASSERT("RST not expected here!",
                 (TCPH_FLAGS(seg->tcphdr) & TCP_RST) == 0);
     /* Stop sending if the nagle algorithm would prevent it
      * Don't stop:
@@ -1177,8 +1212,8 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
     opts += 1;
   }
 #endif
-  
-  /* Set retransmission timer running if it is not currently enabled 
+
+  /* Set retransmission timer running if it is not currently enabled
      This must be set before checking the route. */
   if (pcb->rtime == -1) {
     pcb->rtime = 0;
@@ -1421,12 +1456,12 @@ tcp_rexmit(struct tcp_pcb *pcb)
  *
  * @param pcb the tcp_pcb for which to retransmit the first unacked segment
  */
-void 
+void
 tcp_rexmit_fast(struct tcp_pcb *pcb)
 {
   if (pcb->unacked != NULL && !(pcb->flags & TF_INFR)) {
     /* This is fast retransmit. Retransmit the first unacked segment. */
-    LWIP_DEBUGF(TCP_FR_DEBUG, 
+    LWIP_DEBUGF(TCP_FR_DEBUG,
                 ("tcp_receive: dupacks %"U16_F" (%"U32_F
                  "), fast retransmit %"U32_F"\n",
                  (u16_t)pcb->dupacks, pcb->lastack,
@@ -1440,19 +1475,19 @@ tcp_rexmit_fast(struct tcp_pcb *pcb)
     } else {
       pcb->ssthresh = pcb->cwnd / 2;
     }
-    
+
     /* The minimum value for ssthresh should be 2 MSS */
     if (pcb->ssthresh < (2U * pcb->mss)) {
-      LWIP_DEBUGF(TCP_FR_DEBUG, 
+      LWIP_DEBUGF(TCP_FR_DEBUG,
                   ("tcp_receive: The minimum value for ssthresh %"U16_F
                    " should be min 2 mss %"U16_F"...\n",
                    pcb->ssthresh, 2*pcb->mss));
       pcb->ssthresh = 2*pcb->mss;
     }
-    
+
     pcb->cwnd = pcb->ssthresh + 3 * pcb->mss;
     pcb->flags |= TF_INFR;
-  } 
+  }
 }
 
 
@@ -1477,9 +1512,9 @@ tcp_keepalive(struct tcp_pcb *pcb)
   ip_addr_debug_print(TCP_DEBUG, &pcb->remote_ip);
   LWIP_DEBUGF(TCP_DEBUG, ("\n"));
 
-  LWIP_DEBUGF(TCP_DEBUG, ("tcp_keepalive: tcp_ticks %"U32_F"   pcb->tmr %"U32_F" pcb->keep_cnt_sent %"U16_F"\n", 
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_keepalive: tcp_ticks %"U32_F"   pcb->tmr %"U32_F" pcb->keep_cnt_sent %"U16_F"\n",
                           tcp_ticks, pcb->tmr, pcb->keep_cnt_sent));
-   
+
   p = tcp_output_alloc_header(pcb, 0, 0, htonl(pcb->snd_nxt - 1));
   if(p == NULL) {
     LWIP_DEBUGF(TCP_DEBUG,
@@ -1533,9 +1568,9 @@ tcp_zero_window_probe(struct tcp_pcb *pcb)
   ip_addr_debug_print(TCP_DEBUG, &pcb->remote_ip);
   LWIP_DEBUGF(TCP_DEBUG, ("\n"));
 
-  LWIP_DEBUGF(TCP_DEBUG, 
+  LWIP_DEBUGF(TCP_DEBUG,
               ("tcp_zero_window_probe: tcp_ticks %"U32_F
-               "   pcb->tmr %"U32_F" pcb->keep_cnt_sent %"U16_F"\n", 
+               "   pcb->tmr %"U32_F" pcb->keep_cnt_sent %"U16_F"\n",
                tcp_ticks, pcb->tmr, pcb->keep_cnt_sent));
 
   seg = pcb->unacked;
