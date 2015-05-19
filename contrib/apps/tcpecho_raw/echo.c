@@ -84,7 +84,7 @@ echo_init(void)
   {
     err_t err;
 
-    err = tcp_bind(echo_pcb, IP_ADDR_ANY, 7);
+    err = tcp_bind(echo_pcb, IP_ADDR_ANY, ECHO_PORT);
     if (err == ERR_OK)
     {
       echo_pcb = tcp_listen(echo_pcb);
@@ -309,7 +309,8 @@ echo_send(struct tcp_pcb *tpcb, struct echo_state *es)
   ptr = es->p;
 
   /* enqueue data for transmission */
-  wr_err = tcp_write(tpcb, ptr->payload, ptr->len, 1);
+  /* wr_err = tcp_write(tpcb, ptr->payload, ptr->len, 1); */
+	wr_err = ERR_OK;
   if (wr_err == ERR_OK)
   {
      u16_t plen;

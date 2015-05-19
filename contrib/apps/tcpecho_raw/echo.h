@@ -30,6 +30,8 @@
 #ifndef LWIP_ECHO_H
 #define LWIP_ECHO_H
 
+#define ECHO_PORT 5001
+
 void echo_init(void);
 
 #endif /* LWIP_ECHO_H */
