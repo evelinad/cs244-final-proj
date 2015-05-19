@@ -6,6 +6,10 @@ Original project proposal below.  The top of this README will preference technic
 
 Instead of building a custom kernel and/or loadable kernel modules, we will base our TCP Daytona implementation off of the [LwIP](http://savannah.nongnu.org/projects/lwip/) project, which is a lightweight, user-space TCP/IP stack.
 
+### Execution Notes
+
+**echop** now works like an iperf client.  Simply run "sudo ./echop" in one terminal and "iperf -c 192.168.0.2" in another.  I was showing 296 MBits/sec of throuput before ACK division.
+
 ### Compilation
 
 For starters, I've copied the contents of $(CONTRIBDIR)/ports/unix/proj/minimal into the root directory and modified the Makefile accordingly.  Running 'sudo ./echop' starts a TCP echo server on port 7 (you can interact with it by running 'nc [IP address from echop output] 7').  It's (relatively) simple to see how echop is formulated in the Makefile - all LwIP and LwIP sources are compiled to their respective .a libraries and then linked against.  I hope our project code will be able to leverage this boilerplate nicely.
