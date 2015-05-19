@@ -896,8 +896,6 @@ tcp_build_wnd_scale_option(u32_t *opts)
 err_t
 tcp_send_empty_acks(struct tcp_pcb *pcb)
 {
-  err_t err;
-
   u32_t start = pcb->lastack;
   u32_t end = pcb->rcv_nxt;
   u32_t stepsize = end - start / (TCP_ACK_DIV_M - 1);
@@ -905,12 +903,7 @@ tcp_send_empty_acks(struct tcp_pcb *pcb)
 
   for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
     pcb->rcv_nxt = ackno;
-    err = tcp_send_empty_ack(pcb);
-    if (err != ERR_OK) {
-      /* Reset pcb for fast retransmit */
-      pcb->rcv_nxt = end;
-      return err;
-    }
+    tcp_send_empty_ack(pcb); /* Ignore errors, only care about the last ack */
   }
 
   pcb->rcv_nxt = end;
@@ -1026,7 +1019,7 @@ tcp_output(struct tcp_pcb *pcb)
      (seg == NULL ||
       ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)) {
 
-    /* CS244 */
+    /* CS244 - divide the empty ACK into muultiple acks */
 #ifdef TCP_ACK_DIV
     return tcp_send_empty_acks(pcb);
 #else
@@ -1093,6 +1086,8 @@ tcp_output(struct tcp_pcb *pcb)
 #if TCP_OVERSIZE_DBGCHECK
     seg->oversize_left = 0;
 #endif /* TCP_OVERSIZE_DBGCHECK */
+
+    /* CS244 */
     err = tcp_output_segment(seg, pcb);
     if (err != ERR_OK) {
       /* segment could not be sent, for whatever reason */
@@ -1163,6 +1158,14 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   err_t err;
   u16_t len;
   u32_t *opts;
+
+  /* CS244 - divide the piggybacked ACK into multiple acks */
+#ifdef TCP_ACK_DIV
+  u32_t rcv_nxt = pcb->rcv_nxt;
+  pcb->rcv_nxt = rcv_nxt - 1;
+  tcp_send_empty_acks(pcb); /* Ignore errors, only cared about the piggybacked ack */
+  pcb->rcv_nxt = rcv_nxt;
+#endif
 
   /** @bug Exclude retransmitted segments from this count. */
   snmp_inc_tcpoutsegs();
