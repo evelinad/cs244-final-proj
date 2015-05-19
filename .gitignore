@@ -21,6 +21,7 @@
 *.dylib
 
 # Executables
+echop
 *.exe
 *.out
 *.app
