@@ -889,12 +889,13 @@ tcp_build_wnd_scale_option(u32_t *opts)
 #endif
 
 
-/** CS244 - Send multiple acks for a single data segment
+/**
+ * CS244 - Send multiple successive acks for a single data segment to inflate cwnd
  *
- * @param pcb tcp_pcb
+ * @param pcb
  */
 err_t
-tcp_send_empty_acks(struct tcp_pcb *pcb)
+tcp_send_div_acks(struct tcp_pcb *pcb)
 {
   u32_t start = pcb->lastack;
   u32_t end = pcb->rcv_nxt;
@@ -908,6 +909,28 @@ tcp_send_empty_acks(struct tcp_pcb *pcb)
 
   pcb->rcv_nxt = end;
   return tcp_send_empty_ack(pcb);
+}
+
+/**
+ * CS244 - Send multiple duplicate acks for a previously received data segment
+ * to trigger fast retransmit, after which subsequent acks will inflate cwnd
+ *
+ * @param pcb
+ */
+err_t
+tcp_send_dup_acks(struct tcp_pcb *pcb)
+{
+  err_t err;
+  u32_t count;
+  u32_t end = pcb->rcv_nxt;
+  pcb->rcv_nxt = pcb->lastack;
+
+  for (count = 0; count < TCP_ACK_DUP_N; count++) {
+    err = tcp_send_empty_ack(pcb);
+  }
+
+  pcb->rcv_nxt = end;
+  return err;
 }
 
 /** Send an ACK without data.
@@ -1019,9 +1042,11 @@ tcp_output(struct tcp_pcb *pcb)
      (seg == NULL ||
       ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)) {
 
-    /* CS244 - divide the empty ACK into muultiple acks */
+    /* CS244 - send spurious acks here */
 #ifdef TCP_ACK_DIV
-    return tcp_send_empty_acks(pcb);
+    return tcp_send_div_acks(pcb);
+#elif defined TCP_ACK_DUP
+    return tcp_send_dup_acks(pcb);
 #else
     return tcp_send_empty_ack(pcb);
 #endif
@@ -1159,12 +1184,14 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   u16_t len;
   u32_t *opts;
 
-  /* CS244 - divide the piggybacked ACK into multiple acks */
+  /* CS244 - send spurious acks here */
 #ifdef TCP_ACK_DIV
   u32_t rcv_nxt = pcb->rcv_nxt;
   pcb->rcv_nxt = rcv_nxt - 1;
-  tcp_send_empty_acks(pcb); /* Ignore errors, only cared about the piggybacked ack */
+  tcp_send_div_acks(pcb); /* Ignore errors, only cared about the piggybacked ack */
   pcb->rcv_nxt = rcv_nxt;
+#elif defined TCP_ACK_DUP
+  tcp_send_dup_acks(pcb); /* Don't need to set rcv_nxt, since send_dup_acks uses pcb->flastack */
 #endif
 
   /** @bug Exclude retransmitted segments from this count. */

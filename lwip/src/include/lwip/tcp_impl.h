@@ -72,7 +72,8 @@ void             tcp_input   (struct pbuf *p, struct netif *inp);
 /* Used within the TCP code only: */
 struct tcp_pcb * tcp_alloc   (u8_t prio);
 void             tcp_abandon (struct tcp_pcb *pcb, int reset);
-err_t            tcp_send_empty_acks(struct tcp_pcb *pcb);  /* CS244 */
+err_t            tcp_send_div_acks(struct tcp_pcb *pcb);  /* CS244 */
+err_t            tcp_send_dup_acks(struct tcp_pcb *pcb);  /* CS244 */
 err_t            tcp_send_empty_ack(struct tcp_pcb *pcb);
 void             tcp_rexmit  (struct tcp_pcb *pcb);
 void             tcp_rexmit_rto  (struct tcp_pcb *pcb);

@@ -435,8 +435,11 @@ extern unsigned char debug_flags;
    ---------- CS244 options ----------
    -----------------------------------
 */
-#define TCP_ACK_DIV
+/* #define TCP_ACK_DIV */
 #define TCP_ACK_DIV_M                   10
+
+/* #define TCP_ACK_DUP */
+#define TCP_ACK_DUP_N                   50
 
 
 #endif /* LWIP_LWIPOPTS_H */
