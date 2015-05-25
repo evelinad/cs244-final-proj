@@ -93,6 +93,11 @@
 #endif
 #endif
 
+
+/* CS244 - only run ack div or ack dup once */
+static int experiment_fired = 0;
+
+
 /* Forward declarations.*/
 static err_t tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb);
 
@@ -902,6 +907,9 @@ tcp_send_div_acks(struct tcp_pcb *pcb)
   u32_t stepsize = end - start / (TCP_ACK_DIV_M - 1);
   u32_t ackno;
 
+  /* Only fire off div acks once (excluding initial handshake) */
+  if (experiment_fired++ > 1) return ERR_OK;
+
   for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
     pcb->rcv_nxt = ackno;
     tcp_send_empty_ack(pcb); /* Ignore errors, only care about the last ack */
@@ -924,6 +932,9 @@ tcp_send_dup_acks(struct tcp_pcb *pcb)
   u32_t count;
   u32_t end = pcb->rcv_nxt;
   pcb->rcv_nxt = pcb->lastack;
+
+  /* Only fire off div acks once (excluding initial handshake) */
+  if (experiment_fired++ > 1) return ERR_OK;
 
   for (count = 0; count < TCP_ACK_DUP_N; count++) {
     err = tcp_send_empty_ack(pcb);
