@@ -904,14 +904,15 @@ tcp_send_div_acks(struct tcp_pcb *pcb)
 {
   u32_t start = pcb->lastack;
   u32_t end = pcb->rcv_nxt;
-  u32_t stepsize = end - start / (TCP_ACK_DIV_M - 1);
+  u32_t stepsize = (end - start) / (TCP_ACK_DIV_M - 1);
   u32_t ackno;
 
   /* Only fire off div acks once (excluding initial handshake) */
-  if (experiment_fired++ > 1) return ERR_OK;
+  if (experiment_fired++ > 100) return ERR_OK;
 
   for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
     pcb->rcv_nxt = ackno;
+    printf("sending ack %d\n", ackno);
     tcp_send_empty_ack(pcb); /* Ignore errors, only care about the last ack */
   }
 
@@ -934,7 +935,7 @@ tcp_send_dup_acks(struct tcp_pcb *pcb)
   pcb->rcv_nxt = pcb->lastack;
 
   /* Only fire off div acks once (excluding initial handshake) */
-  if (experiment_fired++ > 1) return ERR_OK;
+  if (experiment_fired++ > 100) return ERR_OK;
 
   for (count = 0; count < TCP_ACK_DUP_N; count++) {
     err = tcp_send_empty_ack(pcb);
