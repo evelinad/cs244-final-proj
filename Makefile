@@ -41,6 +41,13 @@ CFLAGS=-g -Wall -DLWIP_UNIX_$(UNIXARCH) -Os -DLWIP_DEBUG -pedantic -Werror \
 	-Wmissing-prototypes -Wredundant-decls -Wnested-externs -Wno-address
 ARFLAGS=rs
 
+# Add extra flags provided on the command line
+# This way, you can compile with:
+# make echop															Baseline
+# make echop EXTRA_OPTS=-DTCP_ACK_DIV			w/ ACK division
+# make echop EXTRA_OPTS=-DTCP_ACK_DUP			w/ DupACK spoofing
+CFLAGS:=$(CFLAGS) $(EXTRA_OPTS)
+
 CONTRIBDIR=./contrib
 LWIPARCH=$(CONTRIBDIR)/ports/unix
 
@@ -116,5 +123,4 @@ $(LWIPLIB): $(LWIPOBJS)
 
 echop: .depend $(LWIPLIB) $(APPLIB) main.o $(APPFILES)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o echop main.o $(APPLIB) $(LWIPLIB)
-
 
