@@ -87,6 +87,9 @@ def run_experiment():
     receiver.cmd('./echop &', shell=True)
     sender.cmd('route add default gw %s' % receiver.IP())
 
+    # Send a file to the receiver
+    sender.cmd('cat lwipopts.h | nc 192.168.0.2 5001')
+
     pdb.set_trace()
 
     net.stop()
