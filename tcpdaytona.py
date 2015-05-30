@@ -79,13 +79,17 @@ def run_experiment():
     receiver = net.getNodeByName('h1')
 
     # Start tcpdump on the sending node
-    sender.popen("tcpdump -tt 'tcp port 5001' &> %s/dump.out &" % args.dir, shell=True)
+    sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/dump.out &" % args.dir)
+
+    sleep(1)
 
     # Start echop server and configure sender to reach echop via receiver
-    receiver.popen('./echop &', shell=True)
-    sender.popen('route add default gw %s' % receiver_echop_ip)
+    receiver.cmd('./echop &', shell=True)
+    sender.cmd('route add default gw %s' % receiver.IP())
 
     pdb.set_trace()
+
+    net.stop()
 
 if __name__ == "__main__":
   run_experiment()
