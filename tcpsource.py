@@ -14,9 +14,9 @@ parser.add_argument('--port',
                     type=int,
                     required=True)
 parser.add_argument('--time',
-                    help="How long to send",
+                    help="How long to send in ms",
                     type=int,
-                    default=5)
+                    default=5000)
 # parser.add_argument('--recv',
 #                     help="Should recv?",
 #                     required=True)
@@ -45,9 +45,9 @@ if __name__ == '__main__':
 
   # Send data until timeout
   start_time = time()
-  while (time() - start_time < args.time):
+  while (time() - start_time < args.time / 1000):
     # print "Time elapsed: ", (time() - start_time)
     s.send(message)
 
   s.close()
-  print "Done."
+  print "TCPSource Completed."

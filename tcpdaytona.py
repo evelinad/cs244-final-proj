@@ -34,6 +34,10 @@ parser.add_argument('--bw',
                     help="Max buffer size of network interfaces in packets",
                     required=True)
 
+parser.add_argument('--dumpfile',
+                    help="File to store tcpdump output",
+                    required=True)
+
 # Invoke the following to see available algorithms:
 # sysctl -a | grep cong
 parser.add_argument('--cong',
@@ -54,7 +58,7 @@ class TCPDaytonaTopo(Topo):
     self.addLink(host1, host2, bw=args.bw, delay='%sms' % (args.delay))
     return
 
-def run_experiment(dumpname="dump.out"):
+def run_experiment():
     # Create the output directory if it doesn't exist yet
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
@@ -79,7 +83,7 @@ def run_experiment(dumpname="dump.out"):
     sender.cmd("ifconfig h2-eth0 mtu 128")
 
     # Start tcpdump on the sending node
-    sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/%s &" % (args.dir, dumpname))
+    sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/%s &" % (args.dir, args.dumpfile))
 
     sleep(1)
 
@@ -88,7 +92,7 @@ def run_experiment(dumpname="dump.out"):
     sender.cmd('route add default gw %s' % receiver.IP())
 
     # Send a file to the receiver
-    print sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --time 7')
+    print sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --time 5000')
 
     net.stop()
 
