@@ -88,7 +88,7 @@ def run_experiment():
     sleep(1)
 
     # Start echop server and configure sender to reach echop via receiver
-    receiver.cmd('./echop &')
+    receiver.cmd('./echop > %s/echop.out &' % args.dir)
     sender.cmd('route add default gw %s' % receiver.IP())
 
     # Send a file to the receiver

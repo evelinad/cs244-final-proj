@@ -39,7 +39,7 @@ def receive():
 if __name__ == '__main__':
   # if args.recv == "recv":
   #   receive()
-  # else:  
+  # else:
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.connect((args.ip, args.port))
 
