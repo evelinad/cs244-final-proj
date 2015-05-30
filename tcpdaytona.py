@@ -19,9 +19,6 @@ import sys
 import os
 import pdb
 
-receiver_echop_ip = "192.168.0.2"
-receiver_echop_gw = "192.168.0.1"
-
 parser = ArgumentParser(description="TCP Daytona tests")
 parser.add_argument('--delay',
                     type=float,
@@ -57,7 +54,7 @@ class TCPDaytonaTopo(Topo):
     self.addLink(host1, host2, bw=args.bw, delay='%sms' % (args.delay))
     return
 
-def run_experiment():
+def run_experiment(dumpname="dump.out"):
     # Create the output directory if it doesn't exist yet
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
@@ -79,16 +76,23 @@ def run_experiment():
     receiver = net.getNodeByName('h1')
 
     # Start tcpdump on the sending node
-    sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/dump.out &" % args.dir)
+    sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/%s &" % (args.dir, dumpname))
 
     sleep(1)
 
+    pdb.set_trace()
+
     # Start echop server and configure sender to reach echop via receiver
-    receiver.cmd('./echop &', shell=True)
+    receiver.cmd('./echop &')
     sender.cmd('route add default gw %s' % receiver.IP())
 
     # Send a file to the receiver
-    sender.cmd('cat lwipopts.h | nc 192.168.0.2 5001')
+    sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --len 15')
+    # sender.cmd('cat lwipopts.h | nc 192.168.0.2 5001')
+
+    # Kill processes
+    receiver.cmd('killall echop')
+    sender.cmd('killall tcpdump')
 
     pdb.set_trace()
 
