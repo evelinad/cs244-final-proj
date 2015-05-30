@@ -87,12 +87,7 @@ def run_experiment(dumpname="dump.out"):
     sender.cmd('route add default gw %s' % receiver.IP())
 
     # Send a file to the receiver
-    sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --len 15')
-    # sender.cmd('cat lwipopts.h | nc 192.168.0.2 5001')
-
-    # Kill processes
-    receiver.cmd('killall echop')
-    sender.cmd('killall tcpdump')
+    print sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --time 7')
 
     pdb.set_trace()
 

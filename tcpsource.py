@@ -45,7 +45,8 @@ if __name__ == '__main__':
 
   # Send data until timeout
   start_time = time()
-  while (time() - start_time < args.len):
+  while (time() - start_time < args.time):
+    # print "Time elapsed: ", (time() - start_time)
     s.send(message)
 
   s.close()

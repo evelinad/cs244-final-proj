@@ -31,7 +31,7 @@
 #define LWIP_ECHO_H
 
 #define ECHO_PORT 5001
-#define ECHO_SERVER
+/* #define ECHO_SERVER */
 
 void echo_init(void);
 
