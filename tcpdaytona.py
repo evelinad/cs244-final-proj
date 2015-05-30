@@ -75,12 +75,13 @@ def run_experiment(dumpname="dump.out"):
     sender = net.getNodeByName('h2')
     receiver = net.getNodeByName('h1')
 
+    # Reduce sender's MTU so we get more and smaller packets
+    sender.cmd("ifconfig h2-eth0 mtu 128")
+
     # Start tcpdump on the sending node
     sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/%s &" % (args.dir, dumpname))
 
     sleep(1)
-
-    pdb.set_trace()
 
     # Start echop server and configure sender to reach echop via receiver
     receiver.cmd('./echop &')
@@ -88,8 +89,6 @@ def run_experiment(dumpname="dump.out"):
 
     # Send a file to the receiver
     print sender.cmd('python tcpsource.py --ip 192.168.0.2 --port 5001 --time 7')
-
-    pdb.set_trace()
 
     net.stop()
 
