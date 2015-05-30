@@ -96,6 +96,7 @@
 
 /* CS244 - only run ack div or ack dup once */
 static int experiment_fired = 0;
+static u32_t last_ack = 0;
 
 
 /* Forward declarations.*/
@@ -893,24 +894,27 @@ tcp_build_wnd_scale_option(u32_t *opts)
 }
 #endif
 
-
 /**
  * CS244 - Send multiple successive acks for a single data segment to inflate cwnd.
  *
  * @param pcb
  */
-void
+inline void
 tcp_send_div_acks(struct tcp_pcb *pcb)
 {
-  u32_t start = pcb->lastack;
-  u32_t end = pcb->rcv_nxt;
-  u32_t stepsize = (end - start) / (TCP_ACK_DIV_M - 1);
-  u32_t ackno;
+  u32_t start, end, stepsize, ackno;
+  if (experiment_fired <= 1) {
+    last_ack = pcb->rcv_nxt;
+  }
+  start = last_ack;
+  end = pcb->rcv_nxt;
+  stepsize = (end - start) / (TCP_ACK_DIV_M - 1);
 
   for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
     pcb->rcv_nxt = ackno;
     tcp_send_empty_ack_(pcb);
   }
+  last_ack = end;
 
   pcb->rcv_nxt = end;
 }
@@ -921,18 +925,21 @@ tcp_send_div_acks(struct tcp_pcb *pcb)
  *
  * @param pcb
  */
-void
+inline void
 tcp_send_dup_acks(struct tcp_pcb *pcb)
 {
-  u32_t count;
   u32_t end = pcb->rcv_nxt;
-  pcb->rcv_nxt = pcb->lastack;
-
-  for (count = 0; count < TCP_ACK_DUP_N; count++) {
-    tcp_send_empty_ack_(pcb);
+  if (experiment_fired > 1) {
+    u32_t count;
+    pcb->rcv_nxt = last_ack; 
+    for (count = 0; count < TCP_ACK_DUP_N; count++) {
+      tcp_send_empty_ack_(pcb);
+    }
+     pcb->rcv_nxt = end; 
+  } else {
+    last_ack = pcb->rcv_nxt;
   }
-
-  pcb->rcv_nxt = end;
+  last_ack = end;
 }
 
 err_t

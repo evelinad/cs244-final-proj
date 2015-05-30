@@ -61,10 +61,10 @@ def parse_data(filename):
 def main():
     sq_base = parse_data("%s/%s" % (args.dir, args.baseline))
     sq_div  = parse_data("%s/%s" % (args.dir, args.ackdiv))
-    # sq_dup  = parse_data("%s/%s" % (args.dir, args.ackdup))
+    sq_dup  = parse_data("%s/%s" % (args.dir, args.ackdup))
 
     plot(sq_base, sq_div, args.ackdivout)
-    # plot(sq_base, sq_dup, args.ackdupout)
+    plot(sq_base, sq_dup, args.ackdupout)
 
 if __name__ == '__main__':
     main()
