@@ -895,11 +895,11 @@ tcp_build_wnd_scale_option(u32_t *opts)
 
 
 /**
- * CS244 - Send multiple successive acks for a single data segment to inflate cwnd
+ * CS244 - Send multiple successive acks for a single data segment to inflate cwnd.
  *
  * @param pcb
  */
-err_t
+void
 tcp_send_div_acks(struct tcp_pcb *pcb)
 {
   u32_t start = pcb->lastack;
@@ -907,42 +907,45 @@ tcp_send_div_acks(struct tcp_pcb *pcb)
   u32_t stepsize = (end - start) / (TCP_ACK_DIV_M - 1);
   u32_t ackno;
 
-  /* Only fire off div acks once (excluding initial handshake) */
-  if (experiment_fired++ > 100) return ERR_OK;
-
   for (ackno = start + stepsize; ackno < end; ackno += stepsize) {
     pcb->rcv_nxt = ackno;
-    printf("sending ack %d\n", ackno);
-    tcp_send_empty_ack(pcb); /* Ignore errors, only care about the last ack */
+    tcp_send_empty_ack_(pcb);
   }
 
   pcb->rcv_nxt = end;
-  return tcp_send_empty_ack(pcb);
 }
 
 /**
  * CS244 - Send multiple duplicate acks for a previously received data segment
- * to trigger fast retransmit, after which subsequent acks will inflate cwnd
+ * to trigger fast retransmit, after which subsequent acks will inflate cwnd.
  *
  * @param pcb
  */
-err_t
+void
 tcp_send_dup_acks(struct tcp_pcb *pcb)
 {
-  err_t err;
   u32_t count;
   u32_t end = pcb->rcv_nxt;
   pcb->rcv_nxt = pcb->lastack;
 
-  /* Only fire off div acks once (excluding initial handshake) */
-  if (experiment_fired++ > 100) return ERR_OK;
-
   for (count = 0; count < TCP_ACK_DUP_N; count++) {
-    err = tcp_send_empty_ack(pcb);
+    tcp_send_empty_ack_(pcb);
   }
 
   pcb->rcv_nxt = end;
-  return err;
+}
+
+err_t
+tcp_send_empty_ack(struct tcp_pcb *pcb)
+{
+  experiment_fired++;
+#ifdef TCP_ACK_DIV
+  tcp_send_div_acks(pcb);
+#elif defined TCP_ACK_DUP
+  tcp_send_dup_acks(pcb);
+#endif
+
+  return tcp_send_empty_ack_(pcb);
 }
 
 /** Send an ACK without data.
@@ -950,7 +953,7 @@ tcp_send_dup_acks(struct tcp_pcb *pcb)
  * @param pcb Protocol control block for the TCP connection to send the ACK
  */
 err_t
-tcp_send_empty_ack(struct tcp_pcb *pcb)
+tcp_send_empty_ack_(struct tcp_pcb *pcb)
 {
   err_t err;
   struct pbuf *p;
@@ -1053,15 +1056,7 @@ tcp_output(struct tcp_pcb *pcb)
   if (pcb->flags & TF_ACK_NOW &&
      (seg == NULL ||
       ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)) {
-
-    /* CS244 - send spurious acks here */
-#ifdef TCP_ACK_DIV
-    return tcp_send_div_acks(pcb);
-#elif defined TCP_ACK_DUP
-    return tcp_send_dup_acks(pcb);
-#else
     return tcp_send_empty_ack(pcb);
-#endif
   }
 
   /* useg should point to last segment on unacked queue */
@@ -1197,14 +1192,16 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   u32_t *opts;
 
   /* CS244 - send spurious acks here */
+/*
 #ifdef TCP_ACK_DIV
   u32_t rcv_nxt = pcb->rcv_nxt;
   pcb->rcv_nxt = rcv_nxt - 1;
-  tcp_send_div_acks(pcb); /* Ignore errors, only cared about the piggybacked ack */
+  tcp_send_div_acks(pcb);
   pcb->rcv_nxt = rcv_nxt;
 #elif defined TCP_ACK_DUP
-  tcp_send_dup_acks(pcb); /* Don't need to set rcv_nxt, since send_dup_acks uses pcb->flastack */
+  tcp_send_dup_acks(pcb);
 #endif
+*/
 
   /** @bug Exclude retransmitted segments from this count. */
   snmp_inc_tcpoutsegs();
