@@ -6,4 +6,4 @@ To run this code, simply:
 2. Clone this repo and cd into it
 3. sudo ./run.sh
 
-Outputs should be in the directory specified in run.sh
+tcpdump outputs should be in the directory specified in run.sh.  To generate plots, mount the filesystem with sshfs and run 'python tcpplot.py --dir output' on your local machine.
