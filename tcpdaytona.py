@@ -81,6 +81,7 @@ def run_experiment():
 
     # Reduce sender's MTU so we get more and smaller packets
     sender.cmd("ifconfig h2-eth0 mtu 128")
+    sender.cmd("sysctl net.core.netdev_max_backlog=500000")
 
     # Start tcpdump on the sending node
     sender.cmd("tcpdump -tt 'tcp port 5001' &> %s/%s &" % (args.dir, args.dumpfile))
